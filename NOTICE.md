@@ -5,8 +5,9 @@ in this repository. Two things in it are not the author's to license.
 
 ## The university marks
 
-The Çukurova Üniversitesi name, seal and wordmark in `cudeck/media/` are the
-property of the university, reproduced for use in university teaching material.
+The name, seal and wordmark of Çukurova University (Çukurova Üniversitesi) in
+`cudeck/media/` are the property of the university, reproduced for use in
+university teaching material.
 They are not covered by the MIT licence, and permission to use this software
 is not permission to use them.
 

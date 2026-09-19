@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""CUDeck — a lecture-slide theme in the Çukurova Üniversitesi identity.
+"""CUDeck — a lecture-slide theme in the Çukurova University identity.
 
     import cudeck as cu
     from cudeck import *

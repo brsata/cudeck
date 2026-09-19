@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""A lecture-slide theme in the Çukurova Üniversitesi identity.
+"""A lecture-slide theme in the Çukurova University identity.
 
 Nothing here knows what the subject is. A deck describes its course once and
 the theme takes care of the rest.
@@ -24,9 +24,9 @@ A deck starts by describing its course —
 — and everything that would otherwise be repeated on every title and
 references slide comes from that one call.
 
-Colours and the two logo lockups come from Çukurova Üniversitesi Kurumsal
-Kimlik (2015). The pale panel fill, the lifted green, the error red and both
-typefaces are extensions of that document.
+Colours and the two logo lockups come from the university's identity manual,
+Çukurova Üniversitesi Kurumsal Kimlik (2015). The pale panel fill, the lifted
+green, the error red and both typefaces are extensions of that document.
 
 Geometry is fixed by the spine down the left edge: content starts at MARGIN
 and is BODYW wide. Nothing should be positioned from the slide edge.

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cudeck"
 version = "1.0.0"
-description = "A lecture-slide theme in the Çukurova Üniversitesi identity"
+description = "A lecture-slide theme in the Çukurova University identity"
 readme = "README.md"
 requires-python = ">=3.8"
 authors = [{ name = "Barış Ata" }]

@@ -1,6 +1,6 @@
 # CUDeck
 
-A lecture-slide theme in the Çukurova Üniversitesi identity, and a small Python
+A lecture-slide theme in the Çukurova University identity, and a small Python
 library for building decks with it. You write the teaching material; the theme
 decides what it looks like and tells you when it does not fit.
 
@@ -341,7 +341,7 @@ MIT — see [LICENSE](LICENSE).
 
 Two things in the repository are not the author's to license, and
 [NOTICE.md](NOTICE.md) sets them out: the university marks in `cudeck/media/`
-belong to Çukurova Üniversitesi, and the two typefaces are fetched from their
+belong to Çukurova University, and the two typefaces are fetched from their
 own repositories rather than redistributed here.
 
 ## Layout of the repository
