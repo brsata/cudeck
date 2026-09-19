@@ -44,7 +44,8 @@ from pptx.enum.shapes import MSO_SHAPE
 from pptx.oxml.ns import qn
 
 # ---------------------------------------------------------------- palette
-GREEN      = RGBColor(0x00, 0x42, 0x1C)   # Pantone 357 C — the only brand green
+# One green, and it is this one. Everything else is neutral or a signal.
+GREEN      = RGBColor(0x00, 0x42, 0x1C)   # Pantone 357 C
 INK        = RGBColor(0x23, 0x1F, 0x20)   # Pantone PRO Black C
 GREY       = RGBColor(0x5E, 0x5C, 0x5B)   # Pantone 424 C
 WHITE      = RGBColor(0xFF, 0xFF, 0xFF)
@@ -76,7 +77,8 @@ CODE_NUMBERS = [True]
 
 # ---------------------------------------------------------------- type
 FONT      = "Archivo"
-FONT_DISPLAY = "Archivo ExtraBold"   # headlines: the weight is the point of them
+# Headlines: the weight is the point of them.
+FONT_DISPLAY = "Archivo ExtraBold"
 MARKER_FONT = None      # \u25aa comes from the body face — Archivo has it, and
                         # it is the same file on every machine we install to
 MONO      = "IBM Plex Mono"
@@ -96,10 +98,10 @@ T_CALLOUT    = 19
 
 # ---------------------------------------------------------------- geometry
 SW, SH   = Inches(13.333), Inches(7.5)
-# The spine is a slim rail rather than a wide bar, which leaves the content band
-# almost the full width of the slide: 0.92" in, 11.5" wide. Those are also the
-# margins of an ordinary 16:9 deck, so material moved in from one lands in the
-# right place.
+# The spine is a slim rail rather than a wide bar, which leaves the content
+# band almost the full width of the slide: 0.92" in, 11.5" wide. Those are
+# also the margins of an ordinary 16:9 deck, so material moved in from one
+# lands in the right place.
 SPINE_W  = Inches(0.62)
 MARGIN   = Inches(0.92)
 RMARGIN  = Inches(0.91)
@@ -218,7 +220,8 @@ class Course(object):
         return " \u00b7 ".join(x for x in (self.code, self.title) if x)
 
     def byline(self):
-        return " \u00b7 ".join(x for x in (self.lecturer, self.department) if x)
+        parts = (self.lecturer, self.department)
+        return " \u00b7 ".join(x for x in parts if x)
 
     def subtitle(self, chapter=None):
         """The three lines under a title-slide headline."""
@@ -232,7 +235,7 @@ _COURSE = [Course()]
 
 
 def course(**kw):
-    """Describe the course these decks belong to. Call once, before building."""
+    """Describe the course these decks belong to. Call once, up front."""
     _COURSE[0] = Course(**kw)
     return _COURSE[0]
 
@@ -309,7 +312,8 @@ notes = _notes
 
 def _rect(slide, left, top, width, height, fill=None, line=None, line_pt=0.75,
           shape=MSO_SHAPE.RECTANGLE):
-    shp = slide.shapes.add_shape(shape, int(left), int(top), int(width), int(height))
+    shp = slide.shapes.add_shape(shape, int(left), int(top),
+                                 int(width), int(height))
     if fill is None:
         shp.fill.background()
     else:
@@ -374,7 +378,8 @@ def _fit_title(text, base, floor, width, lines=1):
     second line get used.
     """
     size = base
-    while size > floor and wrapped_lines(text, size, width, kind="display") > lines:
+    while (size > floor
+           and wrapped_lines(text, size, width, kind="display") > lines):
         size -= 2
     return size
 
@@ -427,7 +432,8 @@ def finish(prs, out, verbose=True):
                 ox = min(a[2], b[2]) - max(a[0], b[0])
                 oy = min(a[3], b[3]) - max(a[1], b[1])
                 if ox > tol and oy > tol:
-                    warn("%s: panels \u201c%s\u201d and \u201c%s\u201d overlap by %.2f\""
+                    warn("%s: panels \u201c%s\u201d and \u201c%s\u201d "
+                         "overlap by %.2f\""
                          % (a[5], a[4], b[4], oy / 914400.0))
     for slide, prog, num in prs._cu_spines:
         n = index[id(slide)]
@@ -474,7 +480,8 @@ def title_slide(prs, title, subtitle=None, notes=None, chapter_label=None,
     title_h = int(Pt(size * 0.98) * lines)
     title_top = Inches(5.30) - title_h
 
-    tb = _tb(s, Inches(0.80), title_top - Inches(0.46), SW - Inches(1.6), Inches(0.44))
+    tb = _tb(s, Inches(0.80), title_top - Inches(0.46),
+             SW - Inches(1.6), Inches(0.44))
     _run(tb.text_frame.paragraphs[0], subtitle[0] if subtitle else "",
          T_LABEL + 3, GREEN_LIFT, bold=True)
 
@@ -489,7 +496,8 @@ def title_slide(prs, title, subtitle=None, notes=None, chapter_label=None,
               fill=RGBColor(0x4D, 0x7C, 0x5F))
         tb = _tb(s, Inches(0.80), Inches(5.88), SW - Inches(1.6), Inches(1.1))
         for i, line in enumerate(rest):
-            p = tb.text_frame.paragraphs[0] if i == 0 else tb.text_frame.add_paragraph()
+            p = (tb.text_frame.paragraphs[0] if i == 0
+                 else tb.text_frame.add_paragraph())
             p.space_after = Pt(4)
             _run(p, line, 20 if i == 0 else 16,
                  GREEN_PALE if i == 0 else GREEN_LIFT)
@@ -505,7 +513,8 @@ def section_slide(prs, kicker, title, notes=None):
 
     top = Inches(3.05)
     tb = _tb(s, Inches(0.80), top, SW - Inches(1.6), Inches(0.44))
-    _run(tb.text_frame.paragraphs[0], kicker, T_LABEL + 3, GREEN_LIFT, bold=True)
+    _run(tb.text_frame.paragraphs[0], kicker, T_LABEL + 3, GREEN_LIFT,
+         bold=True)
 
     size = _fit_title(title, T_SECTION, 36, SW - Inches(1.6), lines=2)
     tb = _tb(s, Inches(0.80), top + Inches(0.5), SW - Inches(1.6), Inches(1.5))
@@ -527,8 +536,8 @@ def content_slide(prs, title, notes=None, badge_text=None):
     tw = BODYW - (BADGE_W + Inches(0.3) if badge_text else 0)
     size = _fit_title(title, T_HEAD, 26, tw)
     if badge_text:
-        badge(s, badge_text, MARGIN + BODYW - BADGE_W, TITLE_TOP + Inches(0.17),
-              color=ERROR, width=BADGE_W)
+        badge(s, badge_text, MARGIN + BODYW - BADGE_W,
+              TITLE_TOP + Inches(0.17), color=ERROR, width=BADGE_W)
     tb = _tb(s, MARGIN, TITLE_TOP, tw, TITLE_H, anchor=MSO_ANCHOR.MIDDLE)
     p = tb.text_frame.paragraphs[0]
     p.line_spacing = 1.0
@@ -568,14 +577,16 @@ def _fit_bullets(prs, title, norm, size, floor, top):
         for text, lvl, opts in norm:
             sz = opts.get("size", size if lvl == 0 else size - 4)
             indent = Inches(0.45) * lvl
-            lines = wrapped_lines(plain(text), sz, BODYW - indent - Inches(0.42))
+            lines = wrapped_lines(plain(text), sz,
+                                  BODYW - indent - Inches(0.42))
             h += int(Pt(sz * LS_BULLET) * lines) + int(Pt(sz) * 0.62)
         if h <= avail:
             break
         size -= 2
     if size < T_BULLET:
         prs._cu_warnings.append(
-            "'%s' dropped to %d pt — consider splitting the slide" % (title, size))
+            "'%s' dropped to %d pt — consider splitting the slide"
+            % (title, size))
     return size
 
 
@@ -596,7 +607,8 @@ def bullet_list(slide, items, left, top, width, size=T_BULLET, color=INK,
     """Square-marker bullets. items as normalised by bullets_slide."""
     limit = BODY_BOTTOM if bottom is None else bottom
     if floor:
-        while size > floor and top + bullets_height(items, width, size) > limit:
+        while (size > floor
+               and top + bullets_height(items, width, size) > limit):
             size -= 1
     need = 0
     for it in items:
@@ -683,7 +695,7 @@ def code_height(code, label=True, size=T_CODE, pad=True):
 
 def code_panel(slide, code, left, top, width, label="Code", tone="normal",
                size=T_CODE, numbers=True, height=None):
-    """Code in a Şema panel: label strip, line-number gutter, monospace body."""
+    """Code in a Şema panel: label, line-number gutter, monospace body."""
     lines = code.rstrip("\n").split("\n")
     fill, line, head, ink = _tone(tone)
     inner = width - 2 * PANEL_PAD
@@ -817,7 +829,8 @@ def notes_panel(slide, items, left, top, width, height, label="What to notice",
     if top + height > BODY_BOTTOM + Inches(0.02):
         warn("%s: notes panel runs %.2f\" past the body area"
              % (_CONTEXT[0], (top + height - BODY_BOTTOM) / 914400.0))
-    bx, by, bw, bh = panel(slide, left, top, width, height, label=label, tone=tone)
+    bx, by, bw, bh = panel(slide, left, top, width, height,
+                           label=label, tone=tone)
     tb = _tb(slide, bx, by, bw, bh)
     tf = tb.text_frame
     for i, it in enumerate(items):
@@ -839,7 +852,8 @@ def defs_height(pairs, width, size=T_NOTE, label=True):
     h = 0
     for head, body in pairs:
         h += int(Pt((size - 2) * LS_NOTE)) + int(Pt(2))
-        h += int(Pt(size * LS_NOTE) * wrapped_lines(plain(body), size - 2, inner))
+        h += int(Pt(size * LS_NOTE)
+                 * wrapped_lines(plain(body), size - 2, inner))
         h += int(Pt(size * 0.6))
     h += 2 * PANEL_PAD + (LABEL_H if label else 0)
     return h
@@ -847,8 +861,9 @@ def defs_height(pairs, width, size=T_NOTE, label=True):
 
 def defs_panel(slide, pairs, left, top, width, height, label="Each part, once",
                size=T_NOTE, tone="plain"):
-    """A term in the code face, then what it means. pairs: [(head, body), ...]."""
-    bx, by, bw, bh = panel(slide, left, top, width, height, label=label, tone=tone)
+    """Term in the code face, then what it means: [(head, body), ...]."""
+    bx, by, bw, bh = panel(slide, left, top, width, height,
+                           label=label, tone=tone)
     tb = _tb(slide, bx, by, bw, bh)
     tf = tb.text_frame
     for i, (head, body) in enumerate(pairs):
@@ -865,10 +880,11 @@ def defs_panel(slide, pairs, left, top, width, height, label="Each part, once",
 
 def output_panel(slide, runs, left, top, width, height,
                  label="What it prints", size=T_CODE):
-    """runs: [(caption, printed_text), ...] — a console transcript per input."""
+    """runs: [(caption, printed_text), ...] — one transcript per input."""
     if top + height > BODY_BOTTOM + Inches(0.02):
         warn("%s: output panel runs past the body area" % _CONTEXT[0])
-    bx, by, bw, bh = panel(slide, left, top, width, height, label=label, tone="plain")
+    bx, by, bw, bh = panel(slide, left, top, width, height,
+                           label=label, tone="plain")
     tb = _tb(slide, bx, by, bw, bh)
     tf = tb.text_frame
     first = True
@@ -889,7 +905,7 @@ def output_panel(slide, runs, left, top, width, height,
 
 def dont_do(slide, wrong, right, top, wrong_label="Don’t", right_label="Do",
             size=T_CODE, wrong_note=None, right_note=None):
-    """The pitfall pairing: wrong code in red, right code in green, side by side."""
+    """The pitfall pairing: wrong in red, right in green, side by side."""
     (l1, w1), (l2, w2) = cols(1, 1)
     h = max(code_height(wrong, size=size), code_height(right, size=size))
     code_panel(slide, wrong, l1, top, w1, label=wrong_label, tone="error",
@@ -932,7 +948,8 @@ def code_notes(prs, title, code, items, notes_text=None, weights=(1.12, 1),
     limit = (bottom or BODY_BOTTOM) - BODY_TOP
     while code_size > 11 and code_height(code, size=code_size) > limit:
         code_size -= 1
-    h = min(max(code_height(code, size=code_size), notes_height(items, w2)), limit)
+    h = min(max(code_height(code, size=code_size),
+                notes_height(items, w2)), limit)
     top = block_top(h, bottom)
     code_panel(s, code, l1, top, w1, label=code_label, tone=code_tone,
                size=code_size, numbers=numbers, height=h)
@@ -994,15 +1011,16 @@ def _indent(paragraph, level):
     return paragraph
 
 
-def callout(slide, text, left=MARGIN, top=None, width=BODYW, height=Inches(0.86),
-            color=None, size=T_CALLOUT, icon=None):
+def callout(slide, text, left=MARGIN, top=None, width=BODYW,
+            height=Inches(0.86), color=None, size=T_CALLOUT, icon=None):
     """A single emphatic line. Green by default, red when color=ERROR."""
     col = color or GREEN
     # A full-width callout is the closing line of the slide and always sits at
     # the foot, so a `top` passed for a full-width one is ignored. A callout
     # given its own place on the slide — narrower, or off the left margin —
     # keeps the position it was given.
-    full_width = (int(left) == int(MARGIN) and abs(int(width) - int(BODYW)) < Inches(0.1))
+    full_width = (int(left) == int(MARGIN)
+                  and abs(int(width) - int(BODYW)) < Inches(0.1))
     if top is None or full_width:
         top = BODY_BOTTOM - height
     top = min(int(top), int(BODY_BOTTOM - height))
@@ -1059,7 +1077,8 @@ def code_box(slide, code, left, top, width, height=None, size=T_CODE,
     moves. A red-ish `border` marks code that is wrong and selects the error
     tone; a dark `bg` marks a console transcript, which is not line-numbered.
     """
-    if border is not None and tuple(border) in (tuple(ERROR), (0xC0, 0x39, 0x2B)):
+    reds = (tuple(ERROR), (0xC0, 0x39, 0x2B))
+    if border is not None and tuple(border) in reds:
         tone = "error"
     if numbers is None:
         printed = bg is not None and sum(tuple(bg)) < 260
@@ -1070,8 +1089,8 @@ def code_box(slide, code, left, top, width, height=None, size=T_CODE,
 
 
 # ================================================================ tables
-_BORDER_ORDER = ["a:lnL", "a:lnR", "a:lnT", "a:lnB", "a:lnTlToBr", "a:lnBlToTr",
-                 "a:cell3D"]
+_BORDER_ORDER = ["a:lnL", "a:lnR", "a:lnT", "a:lnB",
+                 "a:lnTlToBr", "a:lnBlToTr", "a:cell3D"]
 
 
 def _cell_border(cell, edge, color, pt):
@@ -1083,7 +1102,8 @@ def _cell_border(cell, edge, color, pt):
     ln = tcPr.makeelement(qn(tag), {"w": str(int(Pt(pt))), "cap": "flat",
                                     "cmpd": "sng", "algn": "ctr"})
     fill = ln.makeelement(qn("a:solidFill"), {})
-    clr = ln.makeelement(qn("a:srgbClr"), {"val": "%02X%02X%02X" % (color[0], color[1], color[2])})
+    hexed = "%02X%02X%02X" % (color[0], color[1], color[2])
+    clr = ln.makeelement(qn("a:srgbClr"), {"val": hexed})
     fill.append(clr)
     ln.append(fill)
     idx = _BORDER_ORDER.index(tag)
@@ -1134,7 +1154,8 @@ def table(slide, headers, rows, left, top, width, colw=None, size=T_TABLE,
         c.vertical_anchor = MSO_ANCHOR.BOTTOM
         c.margin_left = Inches(0.14)
         c.margin_bottom = Inches(0.10)
-        r = _run(c.text_frame.paragraphs[0], h.upper(), head_size, GREY, bold=True)
+        r = _run(c.text_frame.paragraphs[0], h.upper(), head_size, GREY,
+                 bold=True)
         r.font._rPr.set("spc", "140")
         _cell_border(c, "B", GREEN, 2.0)
 
@@ -1164,12 +1185,13 @@ _LOGO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "media")
 
 
 def logo(slide, left, top, width, reversed_=False):
-    """Horizontal lockup. reversed_=True is the white cut, for green grounds."""
+    """Horizontal lockup. reversed_=True is the white cut, on green."""
     name = "cu_lockup_white.png" if reversed_ else "cu_lockup_dark.png"
     path = os.path.join(_LOGO_DIR, name)
     if not os.path.exists(path):
         return None
-    return slide.shapes.add_picture(path, int(left), int(top), width=int(width))
+    return slide.shapes.add_picture(path, int(left), int(top),
+                                    width=int(width))
 
 
 def seal(slide, left, top, size):
@@ -1185,13 +1207,16 @@ def references_slide(prs, books=None, note=None, notes_text=None,
     """The closing slide: what to read, from the course's book list."""
     books = current_course().books if books is None else list(books)
     if not books:
-        raise ValueError("references_slide: no books — set them with course(books=[...]) "
-                         "or pass books=[(title, authors, edition), ...]")
+        raise ValueError(
+            "references_slide: no books — set them with "
+            "course(books=[...]) or pass "
+            "books=[(title, authors, edition), ...]")
     s = content_slide(prs, title)
     y = BODY_TOP + Inches(0.25)
     for entry in books:
         btitle, authors, edition = (list(entry) + ["", ""])[:3]
-        bx, by, bw, bh = panel(s, MARGIN, y, BODYW, Inches(1.65), tone="normal")
+        bx, by, bw, bh = panel(s, MARGIN, y, BODYW, Inches(1.65),
+                               tone="normal")
         tb = _tb(s, bx + Inches(0.2), by + Inches(0.1), bw - Inches(0.4), bh)
         tf = tb.text_frame
         for i, (txt, sz, col, bold) in enumerate([(btitle, 26, INK, True),

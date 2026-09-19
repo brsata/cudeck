@@ -243,7 +243,8 @@ def render(prs, idx, path):
 
         if sp.shape_type is not None and sp.shape_type == 13:        # PICTURE
             try:
-                im = Image.open(__import__("io").BytesIO(sp.image.blob)).convert("RGBA")
+                buf = __import__("io").BytesIO(sp.image.blob)
+                im = Image.open(buf).convert("RGBA")
                 im = im.resize((max(1, int(w)), max(1, int(h))), Image.LANCZOS)
                 img.paste(im, (int(x), int(y)), im)
             except Exception:
@@ -266,10 +267,9 @@ def render(prs, idx, path):
                     tcPr = cell._tc.find(qn("a:tcPr"))
                     if tcPr is not None and tcPr.get("anchor") == "b":
                         anchor = "bot"
-                    draw_text_frame(d, cell.text_frame,
-                                    (cx + px(cell.margin_left), ry + 3,
-                                     cw[j] - px(cell.margin_left) * 2, rh[i] - 6),
-                                    vert=anchor)
+                    box = (cx + px(cell.margin_left), ry + 3,
+                           cw[j] - px(cell.margin_left) * 2, rh[i] - 6)
+                    draw_text_frame(d, cell.text_frame, box, vert=anchor)
                     cx += cw[j]
                 ry += rh[i]
             continue
@@ -305,7 +305,8 @@ def render(prs, idx, path):
             ml, mr = px(tf.margin_left), px(tf.margin_right)
             mt = px(tf.margin_top)
             if rot == "vert270":
-                tmp = Image.new("RGBA", (max(1, int(h)), max(1, int(w))), (0, 0, 0, 0))
+                box_wh = (max(1, int(h)), max(1, int(w)))
+                tmp = Image.new("RGBA", box_wh, (0, 0, 0, 0))
                 td = ImageDraw.Draw(tmp)
                 draw_text_frame(td, tf, (0, 0, h, w), wrap_on=False, vert=None)
                 tmp = tmp.rotate(90, expand=True)

@@ -36,10 +36,10 @@ def overlap(a, b):
 
 
 def interesting(sh):
-    """Text-bearing shapes only — a panel behind its own text is not a clash."""
+    """Text-bearing shapes only — a panel behind its text is not a clash."""
     if sh.left is None or sh.top is None:
         return False
-    if sh.left < cu.SPINE_W:                       # the spine and its furniture
+    if sh.left < cu.SPINE_W:                       # spine and its furniture
         return False
     if (sh.height or 0) >= cu.SH - 10:             # a full-bleed ground
         return False

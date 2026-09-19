@@ -53,8 +53,8 @@ def extract(path):
         for shape in slide.shapes:
             body += shape_lines(shape)
         heading = body[0] if body else "(no text)"
-        out += ["---", "", "## Slide %d — %s" % (n, heading), "", "**On screen**",
-                "", "```"]
+        out += ["---", "", "## Slide %d — %s" % (n, heading), "",
+                "**On screen**", "", "```"]
         out += body or ["(nothing)"]
         out += ["```", ""]
         notes = ""
@@ -68,7 +68,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("decks", nargs="+", help=".pptx files to read")
     ap.add_argument("-o", "--out", default=None,
-                    help="directory for the .md files (default: beside each deck)")
+                    help="directory for the .md files "
+                         "(default: beside each deck)")
     args = ap.parse_args()
 
     for path in args.decks:

@@ -3,7 +3,7 @@
 
     pip install -e /path/to/cudeck      # once
     sh tools/install_fonts.sh           # once per machine
-    python examples/data_structures.py  # writes 01_Example.pptx beside this file
+    python examples/data_structures.py  # writes 01_Example.pptx alongside
 
 Copy this file into a course folder, change the course() call, and start
 writing slides. Every layout the theme offers appears below at least once, so
@@ -123,9 +123,11 @@ notes(s, "Build the table on the board and let them check their own working.")
 table_slide(prs, "Stack or queue?",
             ["Use a stack when", "Use a queue when"],
             [["The most recent item matters", "The oldest item matters"],
-             ["Undo, back-buttons, recursion", "Printing, scheduling, buffering"],
+             ["Undo, back-buttons, recursion",
+              "Printing, scheduling, buffering"],
              ["Depth-first search", "Breadth-first search"]],
-            notes="A judgement slide. Both are correct; the question is which fits.")
+            notes="A judgement slide. Both are correct; the question "
+                  "is which fits.")
 
 bullets_slide(prs, "Recap", [
     "A stack is last in, first out",
