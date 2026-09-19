@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cudeck"
+version = "1.0.0"
+description = "A lecture-slide theme in the Çukurova Üniversitesi identity"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{ name = "Barış Ata", email = "bata@cu.edu.tr" }]
+license = { text = "MIT" }
+keywords = ["slides", "powerpoint", "teaching", "lecture", "pptx"]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Education",
+    "Topic :: Office/Business :: Office Suites",
+]
+dependencies = ["python-pptx>=0.6.21"]
+
+[project.optional-dependencies]
+# Pillow is only needed by the checking tools, not to build a deck
+tools = ["Pillow>=9"]
+
+[tool.setuptools]
+packages = ["cudeck"]
+
+[tool.setuptools.package-data]
+cudeck = ["media/*.png"]
