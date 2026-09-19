@@ -294,8 +294,7 @@ the four directions this was chosen from.
 
 Most decks worth rebuilding already exist as PowerPoint files, made by hand over
 several years. The material is good; the layout is whatever PowerPoint made
-easy at the time. This is the workflow that produced the first twelve chapters
-built on CUDeck.
+easy at the time.
 
 **Start by extracting what you have.** The slides are worth rethinking; the
 speaker notes are worth keeping exactly, because they took the longest to write
