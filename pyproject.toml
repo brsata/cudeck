@@ -8,7 +8,7 @@ version = "1.0.0"
 description = "A lecture-slide theme in the Çukurova Üniversitesi identity"
 readme = "README.md"
 requires-python = ">=3.8"
-authors = [{ name = "Barış Ata", email = "bata@cu.edu.tr" }]
+authors = [{ name = "Barış Ata" }]
 license = { text = "MIT" }
 keywords = ["slides", "powerpoint", "teaching", "lecture", "pptx"]
 classifiers = [
