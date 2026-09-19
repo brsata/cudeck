@@ -337,16 +337,12 @@ back-and-forth, most of it spent looking at renders rather than writing code.
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE). Two things in the repository are not covered by
-it:
+MIT — see [LICENSE](LICENSE).
 
-- **The university marks** in `cudeck/media/` are the property of Çukurova
-  Üniversitesi, reproduced from its *Kurumsal Kimlik* (2015) for use in
-  university teaching material. Adapting this theme for another institution
-  means replacing them — `logo()` and `seal()` read whatever is in that folder.
-- **The typefaces** are not redistributed here. `tools/install_fonts.sh` fetches
-  Archivo and IBM Plex Mono from their own repositories, along with their SIL
-  Open Font License 1.1 files.
+Two things in the repository are not the author's to license, and
+[NOTICE.md](NOTICE.md) sets them out: the university marks in `cudeck/media/`
+belong to Çukurova Üniversitesi, and the two typefaces are fetched from their
+own repositories rather than redistributed here.
 
 ## Layout of the repository
 

@@ -19,18 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-The MIT licence above covers the source code and documentation in this
-repository. Two things in it are not the author's to license:
-
-  The Çukurova Üniversitesi name, seal and wordmark in cudeck/media/ are the
-  property of the university, reproduced from its Kurumsal Kimlik (2015) for
-  use in university teaching material. They are not covered by the licence
-  above. If you are adapting this theme for another institution, replace them
-  with your own.
-
-  Archivo (Omnibus-Type) and IBM Plex Mono (IBM) are licensed under the SIL
-  Open Font License 1.1. Neither is redistributed here — tools/install_fonts.sh
-  fetches them from their own repositories, along with their licence files.
