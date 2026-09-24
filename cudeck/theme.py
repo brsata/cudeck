@@ -121,6 +121,8 @@ LS_CODE   = 1.40           # of the point size
 LS_NOTE   = 1.25
 LS_BULLET = 1.26
 LS_OUT    = 1.35
+LS_HEAD   = 0.98           # headlines: set tight, the display face is heavy
+LS_CALLOUT = 1.20
 PANEL_PAD = Inches(0.20)
 LABEL_H  = Inches(0.34)
 
@@ -483,7 +485,7 @@ def title_slide(prs, title, subtitle=None, notes=None, chapter_label=None,
     # the headline is bottom-anchored: a two-line title grows upwards, so the
     # rule and the details below it stay where they are
     lines = wrapped_lines(title, size, SW - Inches(1.6), kind="display")
-    title_h = int(Pt(size * 0.98) * lines)
+    title_h = int(Pt(size * LS_HEAD) * lines)
     title_top = Inches(5.30) - title_h
 
     tb = _tb(s, Inches(0.80), title_top - Inches(0.46),
@@ -493,7 +495,7 @@ def title_slide(prs, title, subtitle=None, notes=None, chapter_label=None,
 
     tb = _tb(s, Inches(0.80), title_top, SW - Inches(1.6), title_h)
     p = tb.text_frame.paragraphs[0]
-    p.line_spacing = Pt(size * 0.98)
+    p.line_spacing = Pt(size * LS_HEAD)
     _run(p, title, size, WHITE, font=FONT_DISPLAY)
 
     rest = subtitle[1:] if len(subtitle) > 1 else []
@@ -525,7 +527,7 @@ def section_slide(prs, kicker, title, notes=None):
     size = _fit_title(title, T_SECTION, 36, SW - Inches(1.6), lines=2)
     tb = _tb(s, Inches(0.80), top + Inches(0.5), SW - Inches(1.6), Inches(1.5))
     p = tb.text_frame.paragraphs[0]
-    p.line_spacing = 1.0
+    p.line_spacing = Pt(size * LS_HEAD)
     _run(p, title, size, WHITE, font=FONT_DISPLAY)
     _notes(s, notes)
     return s
@@ -546,7 +548,7 @@ def content_slide(prs, title, notes=None, badge_text=None):
               TITLE_TOP + Inches(0.17), color=ERROR, width=BADGE_W)
     tb = _tb(s, MARGIN, TITLE_TOP, tw, TITLE_H, anchor=MSO_ANCHOR.MIDDLE)
     p = tb.text_frame.paragraphs[0]
-    p.line_spacing = 1.0
+    p.line_spacing = Pt(size * LS_HEAD)
     _run(p, title, size, INK, font=FONT_DISPLAY)
     _notes(s, notes)
     return s
@@ -931,7 +933,7 @@ def dont_do(slide, wrong, right, top, wrong_label="Don’t", right_label="Do",
 def _note_line(slide, text, left, top, width, color):
     tb = _tb(slide, left, top, width, Inches(0.6))
     p = tb.text_frame.paragraphs[0]
-    p.line_spacing = 1.2
+    p.line_spacing = Pt(16 * LS_CALLOUT)
     _run(p, text, 16, color)
     return tb
 
@@ -1036,7 +1038,7 @@ def callout(slide, text, left=MARGIN, top=None, width=BODYW,
     tb = _tb(slide, left + Inches(0.28), top, width - Inches(0.5), height,
              anchor=MSO_ANCHOR.MIDDLE)
     p = tb.text_frame.paragraphs[0]
-    p.line_spacing = 1.2
+    p.line_spacing = Pt(size * LS_CALLOUT)
     _rich(p, text, size, WHITE, bold=True)
     return top
 
