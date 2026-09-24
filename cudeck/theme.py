@@ -267,6 +267,7 @@ def new_deck():
     prs.slide_width, prs.slide_height = SW, SH
     prs._cu_spines = []
     prs._cu_warnings = []
+    prs._cu_chapter_label = None      # set by chapter(); see _spine()
     _theme_fonts(prs)
     return prs
 
@@ -396,7 +397,10 @@ def _spine(prs, slide):
     tf.word_wrap = False
     p = tf.paragraphs[0]
     p.alignment = PP_ALIGN.CENTER
-    _run(p, prs._cu_chapter_label, T_SPINE, WHITE, bold=True)
+    # a deck that never called chapter() still needs something on its spine;
+    # the course title is right more often than a blank
+    label = prs._cu_chapter_label or current_course().title
+    _run(p, label, T_SPINE, WHITE, bold=True)
     _vertical(tb)
 
     trough = _rect(slide, Inches(0.15), SH - Inches(0.95), Inches(0.32),
