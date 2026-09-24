@@ -67,7 +67,8 @@ echo "$(ls "$OUT/$NAME"/s*.png | wc -l | tr -d ' ') slides in $OUT/$NAME/"
 python3 - "$OUT/$NAME.pdf" <<'PY'
 import re, sys
 d = open(sys.argv[1], "rb").read()
-names = {n.decode().split("+")[-1]
-         for n in re.findall(rb"/BaseFont\s*/([A-Za-z0-9+#\-,_]+)", d)}
+# a substituted face can arrive as a Type 3 font, which has no /BaseFont
+face = rb"/(?:BaseFont|FontName)\s*/([A-Za-z0-9+#\-,_]+)"
+names = {n.decode().split("+")[-1] for n in re.findall(face, d)}
 print("fonts used:", ", ".join(sorted(names)))
 PY
