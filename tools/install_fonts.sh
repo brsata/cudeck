@@ -13,12 +13,17 @@
 # headlines are ExtraBold — so Archivo comes from the upstream Omnibus-Type
 # repository instead. Licences are saved next to this script.
 #
+# On Linux they go to ~/.local/share/fonts, which fontconfig reads.
+#
 # On Windows: fetch the same files from those two repositories, select the
 # .ttf files, right-click and choose "Install for all users".
 
 set -e
 
-DEST="$HOME/Library/Fonts"
+case "$(uname -s)" in
+    Darwin) DEST="$HOME/Library/Fonts" ;;
+    *)      DEST="$HOME/.local/share/fonts" ;;   # where the theme looks
+esac
 LIC="$(cd "$(dirname "$0")" && pwd)/fonts"
 ARCHIVO="https://raw.githubusercontent.com/Omnibus-Type/Archivo/master/fonts/ttf"
 PLEX="https://raw.githubusercontent.com/google/fonts/main/ofl/ibmplexmono"
@@ -45,6 +50,11 @@ done
 curl -fsSL "https://raw.githubusercontent.com/Omnibus-Type/Archivo/master/OFL.txt" \
      -o "$LIC/OFL-Archivo.txt"
 curl -fsSL "$PLEX/OFL.txt" -o "$LIC/OFL-IBMPlexMono.txt"
+
+# fontconfig caches what it has seen; tell it about the new files
+if command -v fc-cache >/dev/null 2>&1; then
+    fc-cache -f "$DEST" >/dev/null
+fi
 
 echo
 echo "Installed into $DEST"

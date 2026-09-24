@@ -10,7 +10,8 @@ there.
 ```bash
 pip install -e '.[tools]'
 sh tools/install_fonts.sh          # Archivo + IBM Plex Mono
-brew install --cask libreoffice    # for tools/render.sh
+brew install --cask libreoffice && brew install poppler   # for tools/render.sh
+# Linux: sudo apt install libreoffice-impress poppler-utils
 ```
 
 Python 3.8+. The only hard dependency is `python-pptx`; Pillow is needed by
@@ -73,8 +74,9 @@ change is usually wrong — or the slide genuinely has too much on it and should
 be split, which is the preferred answer.
 
 Builders shrink to fit before they complain, within limits: code down to 11 pt,
-bullets to 16, notes to 15. A warning means it hit the floor and still did not
-fit.
+bullets to 24, notes to 15. Bullets below 28 pt and code at 12 pt or less are
+reported even when they fit, because the slide wants splitting; any other
+warning means it hit the floor and still did not fit.
 
 ## Style
 

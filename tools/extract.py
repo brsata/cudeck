@@ -26,6 +26,12 @@ def cell_text(cell):
 
 def shape_lines(shape):
     """One shape's content, as Markdown-ish lines."""
+    if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+        # a hand-made diagram is usually a group, and its labels are content
+        out = []
+        for inner in shape.shapes:
+            out += shape_lines(inner)
+        return out
     if shape.has_table:
         rows = [[cell_text(c) for c in row.cells] for row in shape.table.rows]
         if not rows:
@@ -42,6 +48,22 @@ def shape_lines(shape):
     return []
 
 
+def slide_title(slide, body):
+    """The slide's title placeholder if it has one, else its first line."""
+    title = slide.shapes.title
+    if title is not None and title.text_frame.text.strip():
+        return " ".join(title.text_frame.text.split())
+    return body[0] if body else "(no text)"
+
+
+def slide_notes(slide):
+    """The speaker notes, verbatim. A notes page can lack a body entirely."""
+    if not slide.has_notes_slide:
+        return ""
+    frame = slide.notes_slide.notes_text_frame
+    return frame.text.strip() if frame is not None else ""
+
+
 def extract(path):
     prs = Presentation(path)
     name = os.path.splitext(os.path.basename(path))[0]
@@ -52,15 +74,12 @@ def extract(path):
         body = []
         for shape in slide.shapes:
             body += shape_lines(shape)
-        heading = body[0] if body else "(no text)"
+        heading = slide_title(slide, body)
         out += ["---", "", "## Slide %d — %s" % (n, heading), "",
                 "**On screen**", "", "```"]
         out += body or ["(nothing)"]
         out += ["```", ""]
-        notes = ""
-        if slide.has_notes_slide:
-            notes = slide.notes_slide.notes_text_frame.text.strip()
-        out += ["**Notes**", "", notes or "_(none)_", ""]
+        out += ["**Notes**", "", slide_notes(slide) or "_(none)_", ""]
     return "\n".join(out) + "\n"
 
 

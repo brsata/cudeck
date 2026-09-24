@@ -17,34 +17,59 @@ from PIL import Image, ImageDraw, ImageFont
 from pptx import Presentation
 from pptx.oxml.ns import qn
 
+from cudeck.theme import _FONT_DIRS
+
 DPI = 110.0
 E = 914400.0                       # EMU per inch
 PT = 12700.0                       # EMU per point
 
-# the deck's own faces, once install_fonts.sh has been run
-F = os.path.expanduser("~/Library/Fonts")
+# the deck's own faces, once install_fonts.sh has been run, looked for where
+# the theme looks for them
 FONTS = {
-    ("sans", False): F + "/Archivo-Regular.ttf",
-    ("sans", True): F + "/Archivo-Bold.ttf",
-    ("mono", False): F + "/IBMPlexMono-Regular.ttf",
-    ("mono", True): F + "/IBMPlexMono-Bold.ttf",
+    ("sans", False): "Archivo-Regular.ttf",
+    ("sans", True): "Archivo-Bold.ttf",
+    ("mono", False): "IBMPlexMono-Regular.ttf",
+    ("mono", True): "IBMPlexMono-Bold.ttf",
+    ("display", False): "Archivo-ExtraBold.ttf",
+    ("display", True): "Archivo-ExtraBold.ttf",
 }
+# otherwise whatever the system has, first match wins: macOS, Linux, Windows
 FALLBACK = {
-    ("sans", False): "/System/Library/Fonts/Helvetica.ttc",
-    ("sans", True): "/System/Library/Fonts/Helvetica.ttc",
-    ("mono", False): F + "/JetBrainsMonoNL-Regular.ttf",
-    ("mono", True): F + "/JetBrainsMonoNL-Bold.ttf",
+    ("sans", False): ["/System/Library/Fonts/Helvetica.ttc",
+                      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                      "C:/Windows/Fonts/arial.ttf"],
+    ("sans", True): ["/System/Library/Fonts/Helvetica.ttc",
+                     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                     "C:/Windows/Fonts/arialbd.ttf"],
+    ("mono", False): ["/System/Library/Fonts/Menlo.ttc",
+                      "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+                      "C:/Windows/Fonts/consola.ttf"],
+    ("mono", True): ["/System/Library/Fonts/Menlo.ttc",
+                     "/usr/share/fonts/truetype/dejavu/"
+                     "DejaVuSansMono-Bold.ttf",
+                     "C:/Windows/Fonts/consolab.ttf"],
 }
+FALLBACK[("display", False)] = FALLBACK[("display", True)] = \
+    FALLBACK[("sans", True)]
 TTC_INDEX = {}
 _cache = {}
+
+
+def _find(name):
+    for d in _FONT_DIRS:
+        path = os.path.join(d, name)
+        if os.path.exists(path):
+            return path
+    return None
 
 
 def font(kind, bold, pt):
     key = (kind, bold, round(pt))
     if key not in _cache:
-        path = FONTS[(kind, bold)]
-        if not os.path.exists(path):
-            path = FALLBACK[(kind, bold)]
+        path = _find(FONTS[(kind, bold)])
+        if path is None:
+            path = next((p for p in FALLBACK[(kind, bold)]
+                         if os.path.exists(p)), "")
         px = max(6, int(round(pt * DPI / 72.0)))
         idx = TTC_INDEX.get((kind, bold), 0)
         try:
@@ -104,26 +129,44 @@ def run_props(r):
         if lt is not None:
             name = lt.get("typeface") or ""
     kind = "mono" if ("Mono" in name or "Consolas" in name) else "sans"
+    if "ExtraBold" in name:        # the headline face, much wider than Regular
+        kind = "display"
     return size, bold, color, kind
 
 
+# Single spacing, as a renderer draws it: 1.2x the point size for both faces,
+# measured from LibreOffice. A percentage is a multiple of that, not of the
+# point size, which is why the theme sets its spacing in points.
+SINGLE = 1.2
+
+
+def _points(el, tag):
+    """A paragraph spacing given in points, or None."""
+    sp = el.find(qn(tag)) if el is not None else None
+    pts = sp.find(qn("a:spcPts")) if sp is not None else None
+    return int(pts.get("val")) / 100.0 if pts is not None else None
+
+
 def para_props(p):
+    """align, space before and after (pt), line spacing, left margin.
+
+    Line spacing is ("pts", points) or ("pct", multiple of single).
+    """
     pPr = p._p.find(qn("a:pPr"))
-    align, after, spacing, marL = "l", 0.0, 1.0, 0.0
+    align, marL, line = "l", 0.0, ("pct", 1.0)
     if pPr is not None:
         align = {"ctr": "c", "r": "r"}.get(pPr.get("algn"), "l")
         marL = float(pPr.get("marL") or 0)
-        sa = pPr.find(qn("a:spcAft"))
-        if sa is not None:
-            pts = sa.find(qn("a:spcPts"))
-            if pts is not None:
-                after = int(pts.get("val")) / 100.0
         ln = pPr.find(qn("a:lnSpc"))
         if ln is not None:
-            pct = ln.find(qn("a:spcPct"))
-            if pct is not None:
-                spacing = int(pct.get("val")) / 100000.0
-    return align, after, spacing, marL
+            pts, pct = ln.find(qn("a:spcPts")), ln.find(qn("a:spcPct"))
+            if pts is not None:
+                line = ("pts", int(pts.get("val")) / 100.0)
+            elif pct is not None:
+                line = ("pct", int(pct.get("val")) / 100000.0)
+    before = _points(pPr, "a:spcBef") or 0.0
+    after = _points(pPr, "a:spcAft") or 0.0
+    return align, before, after, line, marL
 
 
 def wrap(text, fnt, width):
@@ -146,7 +189,9 @@ def draw_text_frame(d, tf, box, wrap_on=True, vert=None):
     lines = []                      # ([(text, font, colour)], align, indent)
     heights = []
     for p in tf.paragraphs:
-        align, after, spacing, marL = para_props(p)
+        align, before, after, line, marL = para_props(p)
+        if before:
+            heights.append(("gap", before * DPI / 72.0))
         runs = [r for r in p.runs if r.text]
         if not runs:
             heights.append(("gap", after * DPI / 72.0))
@@ -164,7 +209,10 @@ def draw_text_frame(d, tf, box, wrap_on=True, vert=None):
                     toks.append((" ", f, col))
                 if part:
                     toks.append((part, f, col))
-        lh = maxpt * spacing * DPI / 72.0
+        if line[0] == "pts":
+            lh = line[1] * DPI / 72.0
+        else:
+            lh = maxpt * SINGLE * line[1] * DPI / 72.0
         if not wrap_on:
             lines.append((toks, align, indent))
             heights.append(("line", lh))
@@ -206,8 +254,14 @@ def draw_text_frame(d, tf, box, wrap_on=True, vert=None):
             x = x0 + w - tw
         else:
             x = x0 + indent
+        # the baseline sits where it would in the font's own line box, scaled
+        # to the line's actual height: tight spacing pulls it up, loose pushes
+        # it down
+        asc, desc = max((f.getmetrics() for _, f, _ in segs),
+                        key=lambda m: m[0] + m[1])
+        base = y + v * asc / float(asc + desc)
         for t, f, col in segs:
-            d.text((x, y), t, font=f, fill=col)
+            d.text((x, base), t, font=f, fill=col, anchor="ls")
             x += f.getlength(t)
         y += v
 

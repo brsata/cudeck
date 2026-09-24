@@ -79,8 +79,12 @@ CODE_NUMBERS = [True]
 FONT      = "Archivo"
 # Headlines: the weight is the point of them.
 FONT_DISPLAY = "Archivo ExtraBold"
-MARKER_FONT = None      # \u25aa comes from the body face — Archivo has it, and
-                        # it is the same file on every machine we install to
+# The bullet marker comes from the body face, so it is the same glyph on every
+# machine that has the fonts installed. That rules out a square: neither
+# Archivo nor IBM Plex Mono has \u25aa or any other, and a square marker was
+# drawn from whatever fallback each machine had.
+MARKER = "\u2022"
+MARKER_FONT = None
 MONO      = "IBM Plex Mono"
 CODEFONT  = MONO
 
@@ -130,7 +134,13 @@ LABEL_H  = Inches(0.34)
 # ================================================================ measuring
 # If the real faces are installed, measure with them; otherwise fall back to a
 # per-character estimate so a build still works on a machine without fonts.
+# Where install_fonts.sh puts them, and where each system's own installer does:
+# Windows installs for the current user unless told "for all users".
 _FONT_DIRS = [os.path.expanduser("~/Library/Fonts"), "/Library/Fonts",
+              os.path.expanduser("~/.local/share/fonts"),
+              os.path.expanduser("~/.fonts"), "/usr/local/share/fonts",
+              os.path.join(os.environ.get("LOCALAPPDATA", ""),
+                           "Microsoft", "Windows", "Fonts"),
               "C:/Windows/Fonts"]
 _FACES = {("sans", False): "Archivo-Regular.ttf",
           ("sans", True): "Archivo-Bold.ttf",
@@ -561,17 +571,7 @@ def bullets_slide(prs, title, items, notes=None, size=T_BULLET, top=BODY_TOP,
                   floor=24):
     """Body bullets.  items: str, or (text, level), or (text, level, opts)."""
     s = content_slide(prs, title)
-    norm = []
-    for it in items:
-        opts = {}
-        if isinstance(it, tuple):
-            text, lvl = (it[0], it[1]) if len(it) >= 2 else (it[0], 0)
-            if len(it) == 3:
-                opts = it[2]
-        else:
-            text, lvl = it, 0
-        norm.append((text, lvl, opts))
-
+    norm = [_bullet(it) for it in items]
     size = _fit_bullets(prs, title, norm, size, floor, top)
     bullet_list(s, norm, MARGIN, top, BODYW, size=size)
     _notes(s, notes)
@@ -581,13 +581,7 @@ def bullets_slide(prs, title, items, notes=None, size=T_BULLET, top=BODY_TOP,
 def _fit_bullets(prs, title, norm, size, floor, top):
     avail = BODY_BOTTOM - top
     while True:
-        h = 0
-        for text, lvl, opts in norm:
-            sz = opts.get("size", size if lvl == 0 else size - 4)
-            indent = Inches(0.45) * lvl
-            lines = wrapped_lines(plain(text), sz,
-                                  BODYW - indent - Inches(0.42))
-            h += int(Pt(sz * LS_BULLET) * lines) + int(Pt(sz) * 0.62)
+        h = bullets_height(norm, BODYW, size)
         # stop at the floor even if it still does not fit; bullet_list then
         # reports the overrun, which is the honest answer
         if h <= avail or size - 2 < floor:
@@ -600,34 +594,43 @@ def _fit_bullets(prs, title, norm, size, floor, top):
     return size
 
 
+def _bullet(it):
+    """An item as (text, level, opts), from str, (text,), (text, level) or
+    (text, level, opts)."""
+    if not isinstance(it, tuple):
+        return it, 0, {}
+    return (it[0], it[1] if len(it) >= 2 else 0,
+            it[2] if len(it) == 3 else {})
+
+
 def bullets_height(items, width, size):
+    """Height bullet_list needs for `items` at `size`.
+
+    Measured as drawn: a sub-bullet is 4 pt smaller and indented, and a bold
+    or code-face item is measured in that face.
+    """
     need = 0
     for it in items:
-        text = it[0] if isinstance(it, tuple) else it
-        opts = it[2] if isinstance(it, tuple) and len(it) == 3 else {}
-        sz = opts.get("size", size)
-        need += int(Pt(sz * LS_BULLET) *
-                    wrapped_lines(plain(text), sz, width - Inches(0.42)))
-        need += int(Pt(sz) * 0.62)
+        text, lvl, opts = _bullet(it)
+        sz = opts.get("size", size if lvl == 0 else size - 4)
+        inner = width - Inches(0.45) * lvl - Inches(0.42)
+        lines = wrapped_lines(plain(text), sz, inner,
+                              mono=opts.get("mono", False),
+                              bold=opts.get("bold", False))
+        need += int(Pt(sz * LS_BULLET) * lines) + int(Pt(sz) * 0.62)
     return need
 
 
 def bullet_list(slide, items, left, top, width, size=T_BULLET, color=INK,
                 marker=GREEN, floor=None, bottom=None):
-    """Square-marker bullets. items as normalised by bullets_slide."""
+    """Bulleted list. items: str, or (text, level), or
+    (text, level, opts)."""
     limit = BODY_BOTTOM if bottom is None else bottom
     if floor:
         while (size > floor
                and top + bullets_height(items, width, size) > limit):
             size -= 1
-    need = 0
-    for it in items:
-        text = it[0] if isinstance(it, tuple) else it
-        opts = it[2] if isinstance(it, tuple) and len(it) == 3 else {}
-        sz = opts.get("size", size)
-        need += int(Pt(sz * LS_BULLET) *
-                    wrapped_lines(plain(text), sz, width - Inches(0.42)))
-        need += int(Pt(sz) * 0.62)
+    need = bullets_height(items, width, size)
     if top + need > BODY_BOTTOM + Inches(0.05):
         warn("%s: bullets run %.2f\" past the foot of the slide"
              % (_CONTEXT[0], (top + need - BODY_BOTTOM) / 914400.0))
@@ -636,11 +639,7 @@ def bullet_list(slide, items, left, top, width, size=T_BULLET, color=INK,
     tb = _tb(slide, left, top, width, min(need, BODY_BOTTOM - top))
     tf = tb.text_frame
     for i, it in enumerate(items):
-        if isinstance(it, tuple):
-            text, lvl = it[0], (it[1] if len(it) >= 2 else 0)
-            opts = it[2] if len(it) == 3 else {}
-        else:
-            text, lvl, opts = it, 0, {}
+        text, lvl, opts = _bullet(it)
         sz = opts.get("size", size if lvl == 0 else size - 4)
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         p.space_after = Pt(sz * 0.62)
@@ -651,7 +650,7 @@ def bullet_list(slide, items, left, top, width, size=T_BULLET, color=INK,
             pPr.set("indent", "0")
         if not text:
             continue
-        _run(p, "▪  ", sz * 0.62, opts.get("marker", marker), bold=True,
+        _run(p, MARKER + "  ", sz, opts.get("marker", marker), bold=True,
              font=MARKER_FONT)
         if opts.get("mono"):
             _run(p, plain(text), sz, opts.get("color", color),
@@ -726,7 +725,7 @@ def code_panel(slide, code, left, top, width, label="Code", tone="normal",
             numbers, gutter = False, 0
     size = fits(inner - gutter)
     if height is None:
-        while size > 10 and top + code_height(code, label=bool(label),
+        while size > 11 and top + code_height(code, label=bool(label),
                                               size=size) > BODY_BOTTOM:
             size -= 1
     h = height or code_height(code, label=bool(label), size=size)
@@ -759,7 +758,7 @@ def code_panel(slide, code, left, top, width, label="Code", tone="normal",
     if widest(size) > avail:
         warn("%s: code is %.2f\" too wide even at %d pt"
              % (_CONTEXT[0], (widest(size) - avail) / 914400.0, size))
-    elif size < 12:
+    elif size < 13:
         warn("%s: code shrank to %d pt to fit \u2014 worth splitting"
              % (_CONTEXT[0], size))
 
@@ -809,8 +808,11 @@ def notes_height(items, width, size=T_NOTE, label=True):
     inner = width - 2 * PANEL_PAD - Inches(0.34)
     h = 0
     for it in items:
-        text = plain(it[0] if isinstance(it, tuple) else it)
-        h += int(Pt(size * LS_NOTE) * wrapped_lines(plain(text), size, inner))
+        # a (text, colour) item is drawn bold, so measure it bold
+        bold = isinstance(it, tuple)
+        text = plain(it[0] if bold else it)
+        h += int(Pt(size * LS_NOTE)
+                 * wrapped_lines(text, size, inner, bold=bold))
         h += int(Pt(size) * 0.58)
     h += 2 * PANEL_PAD + (LABEL_H if label else 0)
     return h
@@ -851,7 +853,7 @@ def notes_panel(slide, items, left, top, width, height, label="What to notice",
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         p.space_after = Pt(size * 0.58)
         p.line_spacing = Pt(size * LS_NOTE)
-        _run(p, "▪  ", size * 0.6, color if bold else GREEN, bold=True,
+        _run(p, MARKER + "  ", size, color if bold else GREEN, bold=True,
              font=MARKER_FONT)
         _rich(p, text, size, color, bold=bold)
     return height
@@ -872,6 +874,13 @@ def defs_height(pairs, width, size=T_NOTE, label=True):
 def defs_panel(slide, pairs, left, top, width, height, label="Each part, once",
                size=T_NOTE, tone="plain"):
     """Term in the code face, then what it means: [(head, body), ...]."""
+    need = defs_height(pairs, width, size=size, label=bool(label))
+    if need > height:
+        warn("%s: definitions panel is %.2f\" short"
+             % (_CONTEXT[0], (need - height) / 914400.0))
+    if top + height > BODY_BOTTOM + Inches(0.02):
+        warn("%s: definitions panel runs %.2f\" past the body area"
+             % (_CONTEXT[0], (top + height - BODY_BOTTOM) / 914400.0))
     bx, by, bw, bh = panel(slide, left, top, width, height,
                            label=label, tone=tone)
     tb = _tb(slide, bx, by, bw, bh)
@@ -891,8 +900,20 @@ def defs_panel(slide, pairs, left, top, width, height, label="Each part, once",
 def output_panel(slide, runs, left, top, width, height,
                  label="What it prints", size=T_CODE):
     """runs: [(caption, printed_text), ...] — one transcript per input."""
+    need = output_height(runs, size=size, label=bool(label))
+    if need > height:
+        warn("%s: output panel is %.2f\" short"
+             % (_CONTEXT[0], (need - height) / 914400.0))
     if top + height > BODY_BOTTOM + Inches(0.02):
-        warn("%s: output panel runs past the body area" % _CONTEXT[0])
+        warn("%s: output panel runs %.2f\" past the body area"
+             % (_CONTEXT[0], (top + height - BODY_BOTTOM) / 914400.0))
+    # printed lines are not wrapped or shrunk: a transcript has to read as
+    # the program's own output, so a line too long for the panel is reported
+    widest = max(text_w(ln, size, mono=True)
+                 for _, printed in runs for ln in printed.split("\n"))
+    if widest > width - 2 * PANEL_PAD:
+        warn("%s: output is %.2f\" too wide for its panel"
+             % (_CONTEXT[0], (widest - width + 2 * PANEL_PAD) / 914400.0))
     bx, by, bw, bh = panel(slide, left, top, width, height,
                            label=label, tone="plain")
     tb = _tb(slide, bx, by, bw, bh)
