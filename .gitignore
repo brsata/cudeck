@@ -6,6 +6,9 @@ dist/
 .venv/
 venv/
 
+# written by tools/install_fonts.sh, per machine
+tools/fonts/
+
 # built decks and the proofing output
 *.pptx
 *.pdf
