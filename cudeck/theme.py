@@ -121,6 +121,8 @@ LS_CODE   = 1.40           # of the point size
 LS_NOTE   = 1.25
 LS_BULLET = 1.26
 LS_OUT    = 1.35
+LS_HEAD   = 0.98           # headlines: set tight, the display face is heavy
+LS_CALLOUT = 1.20
 PANEL_PAD = Inches(0.20)
 LABEL_H  = Inches(0.34)
 
@@ -267,6 +269,7 @@ def new_deck():
     prs.slide_width, prs.slide_height = SW, SH
     prs._cu_spines = []
     prs._cu_warnings = []
+    prs._cu_chapter_label = None      # set by chapter(); see _spine()
     _theme_fonts(prs)
     return prs
 
@@ -396,7 +399,10 @@ def _spine(prs, slide):
     tf.word_wrap = False
     p = tf.paragraphs[0]
     p.alignment = PP_ALIGN.CENTER
-    _run(p, prs._cu_chapter_label, T_SPINE, WHITE, bold=True)
+    # a deck that never called chapter() still needs something on its spine;
+    # the course title is right more often than a blank
+    label = prs._cu_chapter_label or current_course().title
+    _run(p, label, T_SPINE, WHITE, bold=True)
     _vertical(tb)
 
     trough = _rect(slide, Inches(0.15), SH - Inches(0.95), Inches(0.32),
@@ -439,7 +445,9 @@ def finish(prs, out, verbose=True):
         n = index[id(slide)]
         num.text_frame.paragraphs[0].runs[0].text = "%02d" % n
         prog.width = max(Inches(0.04), int(Inches(0.32) * n / total))
-    os.makedirs(os.path.dirname(out), exist_ok=True)
+    # a bare filename has no folder to make, and makedirs("") raises
+    if os.path.dirname(out):
+        os.makedirs(os.path.dirname(out), exist_ok=True)
     prs.save(out)
     if verbose:
         print("saved: %s" % out)
@@ -477,7 +485,7 @@ def title_slide(prs, title, subtitle=None, notes=None, chapter_label=None,
     # the headline is bottom-anchored: a two-line title grows upwards, so the
     # rule and the details below it stay where they are
     lines = wrapped_lines(title, size, SW - Inches(1.6), kind="display")
-    title_h = int(Pt(size * 0.98) * lines)
+    title_h = int(Pt(size * LS_HEAD) * lines)
     title_top = Inches(5.30) - title_h
 
     tb = _tb(s, Inches(0.80), title_top - Inches(0.46),
@@ -487,7 +495,7 @@ def title_slide(prs, title, subtitle=None, notes=None, chapter_label=None,
 
     tb = _tb(s, Inches(0.80), title_top, SW - Inches(1.6), title_h)
     p = tb.text_frame.paragraphs[0]
-    p.line_spacing = Pt(size * 0.98)
+    p.line_spacing = Pt(size * LS_HEAD)
     _run(p, title, size, WHITE, font=FONT_DISPLAY)
 
     rest = subtitle[1:] if len(subtitle) > 1 else []
@@ -519,7 +527,7 @@ def section_slide(prs, kicker, title, notes=None):
     size = _fit_title(title, T_SECTION, 36, SW - Inches(1.6), lines=2)
     tb = _tb(s, Inches(0.80), top + Inches(0.5), SW - Inches(1.6), Inches(1.5))
     p = tb.text_frame.paragraphs[0]
-    p.line_spacing = 1.0
+    p.line_spacing = Pt(size * LS_HEAD)
     _run(p, title, size, WHITE, font=FONT_DISPLAY)
     _notes(s, notes)
     return s
@@ -540,7 +548,7 @@ def content_slide(prs, title, notes=None, badge_text=None):
               TITLE_TOP + Inches(0.17), color=ERROR, width=BADGE_W)
     tb = _tb(s, MARGIN, TITLE_TOP, tw, TITLE_H, anchor=MSO_ANCHOR.MIDDLE)
     p = tb.text_frame.paragraphs[0]
-    p.line_spacing = 1.0
+    p.line_spacing = Pt(size * LS_HEAD)
     _run(p, title, size, INK, font=FONT_DISPLAY)
     _notes(s, notes)
     return s
@@ -572,7 +580,7 @@ def bullets_slide(prs, title, items, notes=None, size=T_BULLET, top=BODY_TOP,
 
 def _fit_bullets(prs, title, norm, size, floor, top):
     avail = BODY_BOTTOM - top
-    while size >= floor:
+    while True:
         h = 0
         for text, lvl, opts in norm:
             sz = opts.get("size", size if lvl == 0 else size - 4)
@@ -580,7 +588,9 @@ def _fit_bullets(prs, title, norm, size, floor, top):
             lines = wrapped_lines(plain(text), sz,
                                   BODYW - indent - Inches(0.42))
             h += int(Pt(sz * LS_BULLET) * lines) + int(Pt(sz) * 0.62)
-        if h <= avail:
+        # stop at the floor even if it still does not fit; bullet_list then
+        # reports the overrun, which is the honest answer
+        if h <= avail or size - 2 < floor:
             break
         size -= 2
     if size < T_BULLET:
@@ -923,7 +933,7 @@ def dont_do(slide, wrong, right, top, wrong_label="Don’t", right_label="Do",
 def _note_line(slide, text, left, top, width, color):
     tb = _tb(slide, left, top, width, Inches(0.6))
     p = tb.text_frame.paragraphs[0]
-    p.line_spacing = 1.2
+    p.line_spacing = Pt(16 * LS_CALLOUT)
     _run(p, text, 16, color)
     return tb
 
@@ -1028,7 +1038,7 @@ def callout(slide, text, left=MARGIN, top=None, width=BODYW,
     tb = _tb(slide, left + Inches(0.28), top, width - Inches(0.5), height,
              anchor=MSO_ANCHOR.MIDDLE)
     p = tb.text_frame.paragraphs[0]
-    p.line_spacing = 1.2
+    p.line_spacing = Pt(size * LS_CALLOUT)
     _rich(p, text, size, WHITE, bold=True)
     return top
 
@@ -1136,8 +1146,39 @@ def table_slide(prs, title, headers, rows, notes=None, colw=None, size=T_TABLE,
     return s
 
 
+# Table cells are left single-spaced, and a row grows to fit its text. Single
+# spacing comes out at 1.2x the point size for both faces — measured from a
+# LibreOffice render, and not what either font's own metrics say.
+LH_TABLE = 1.20
+
+
+def table_height(headers, rows, width, colw=None, size=T_TABLE,
+                 row_h=Inches(0.58)):
+    """Height a table needs: a row is row_h unless its text wraps taller."""
+    weights = colw or [1] * len(headers)
+    total = float(sum(weights))
+    inner = [int(width * w / total) - Inches(0.14 + 0.10) for w in weights]
+    h = row_h                                        # the header row
+    for row in rows:
+        need = row_h
+        for j, val in enumerate(row):
+            mono = isinstance(val, tuple)
+            text = val[0] if mono else val
+            sz = size - 1 if mono else size
+            lines = wrapped_lines(text, sz, inner[j], mono=mono)
+            need = max(need, int(Pt(sz * LH_TABLE) * lines)
+                       + Inches(0.12))
+        h += need
+    return h
+
+
 def table(slide, headers, rows, left, top, width, colw=None, size=T_TABLE,
           head_size=T_TABLE_HEAD, row_h=Inches(0.58)):
+    need = table_height(headers, rows, width, colw=colw, size=size,
+                        row_h=row_h)
+    if top + need > BODY_BOTTOM + Inches(0.02):
+        warn("%s: table runs %.2f\" past the foot of the slide"
+             % (_CONTEXT[0], (top + need - BODY_BOTTOM) / 914400.0))
     nrow, ncol = len(rows) + 1, len(headers)
     g = slide.shapes.add_table(nrow, ncol, int(left), int(top), int(width),
                                int(row_h * nrow)).table
@@ -1213,6 +1254,12 @@ def references_slide(prs, books=None, note=None, notes_text=None,
             "books=[(title, authors, edition), ...]")
     s = content_slide(prs, title)
     y = BODY_TOP + Inches(0.25)
+    # each book takes 2" and only two fit; a third runs off the foot
+    last = y + Inches(2.0) * (len(books) - 1) + Inches(1.65)
+    if last > BODY_BOTTOM + Inches(0.02):
+        warn("%s: %d books run %.2f\" past the foot of the slide — "
+             "split them across two slides"
+             % (title, len(books), (last - BODY_BOTTOM) / 914400.0))
     for entry in books:
         btitle, authors, edition = (list(entry) + ["", ""])[:3]
         bx, by, bw, bh = panel(s, MARGIN, y, BODYW, Inches(1.65),
