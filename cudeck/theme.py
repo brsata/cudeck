@@ -1144,8 +1144,39 @@ def table_slide(prs, title, headers, rows, notes=None, colw=None, size=T_TABLE,
     return s
 
 
+# Table cells are left single-spaced, and a row grows to fit its text. Single
+# spacing comes out at 1.2x the point size for both faces — measured from a
+# LibreOffice render, and not what either font's own metrics say.
+LH_TABLE = 1.20
+
+
+def table_height(headers, rows, width, colw=None, size=T_TABLE,
+                 row_h=Inches(0.58)):
+    """Height a table needs: a row is row_h unless its text wraps taller."""
+    weights = colw or [1] * len(headers)
+    total = float(sum(weights))
+    inner = [int(width * w / total) - Inches(0.14 + 0.10) for w in weights]
+    h = row_h                                        # the header row
+    for row in rows:
+        need = row_h
+        for j, val in enumerate(row):
+            mono = isinstance(val, tuple)
+            text = val[0] if mono else val
+            sz = size - 1 if mono else size
+            lines = wrapped_lines(text, sz, inner[j], mono=mono)
+            need = max(need, int(Pt(sz * LH_TABLE) * lines)
+                       + Inches(0.12))
+        h += need
+    return h
+
+
 def table(slide, headers, rows, left, top, width, colw=None, size=T_TABLE,
           head_size=T_TABLE_HEAD, row_h=Inches(0.58)):
+    need = table_height(headers, rows, width, colw=colw, size=size,
+                        row_h=row_h)
+    if top + need > BODY_BOTTOM + Inches(0.02):
+        warn("%s: table runs %.2f\" past the foot of the slide"
+             % (_CONTEXT[0], (top + need - BODY_BOTTOM) / 914400.0))
     nrow, ncol = len(rows) + 1, len(headers)
     g = slide.shapes.add_table(nrow, ncol, int(left), int(top), int(width),
                                int(row_h * nrow)).table

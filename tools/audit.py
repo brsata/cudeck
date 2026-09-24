@@ -35,6 +35,17 @@ def overlap(a, b):
             min(a[3], b[3]) - max(a[1], b[1]))
 
 
+def text(sh):
+    """What a shape says. A table is not a text frame, but it is text.
+
+    A table's height in the file is what was asked for; rows that wrap grow
+    past it when drawn, so only the build's fit report sees those.
+    """
+    if sh.has_table:
+        return " ".join(c.text for row in sh.table.rows for c in row.cells)
+    return sh.text_frame.text if sh.has_text_frame else ""
+
+
 def interesting(sh):
     """Text-bearing shapes only — a panel behind its text is not a clash."""
     if sh.left is None or sh.top is None:
@@ -43,7 +54,7 @@ def interesting(sh):
         return False
     if (sh.height or 0) >= cu.SH - 10:             # a full-bleed ground
         return False
-    return sh.has_text_frame and sh.text_frame.text.strip()
+    return text(sh).strip()
 
 
 def audit(path):
@@ -55,10 +66,10 @@ def audit(path):
             r = rect(sh)
             if r[3] > BOTTOM:
                 problems.append((n, "off the foot", r[3],
-                                 sh.text_frame.text.strip()[:40]))
+                                 text(sh).strip()[:40]))
             if r[2] > RIGHT:
                 problems.append((n, "off the right", r[2],
-                                 sh.text_frame.text.strip()[:40]))
+                                 text(sh).strip()[:40]))
         for i in range(len(shapes)):
             for j in range(i + 1, len(shapes)):
                 a, b = rect(shapes[i]), rect(shapes[j])
@@ -66,8 +77,8 @@ def audit(path):
                 if ox > MIN_OVERLAP and oy > MIN_OVERLAP:
                     problems.append(
                         (n, "text over text", min(ox, oy),
-                         "%s | %s" % (shapes[i].text_frame.text.strip()[:24],
-                                      shapes[j].text_frame.text.strip()[:24])))
+                         "%s | %s" % (text(shapes[i]).strip()[:24],
+                                      text(shapes[j]).strip()[:24])))
     return problems
 
 
