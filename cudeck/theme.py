@@ -726,7 +726,7 @@ def code_panel(slide, code, left, top, width, label="Code", tone="normal",
             numbers, gutter = False, 0
     size = fits(inner - gutter)
     if height is None:
-        while size > 10 and top + code_height(code, label=bool(label),
+        while size > 11 and top + code_height(code, label=bool(label),
                                               size=size) > BODY_BOTTOM:
             size -= 1
     h = height or code_height(code, label=bool(label), size=size)
@@ -759,7 +759,7 @@ def code_panel(slide, code, left, top, width, label="Code", tone="normal",
     if widest(size) > avail:
         warn("%s: code is %.2f\" too wide even at %d pt"
              % (_CONTEXT[0], (widest(size) - avail) / 914400.0, size))
-    elif size < 12:
+    elif size < 13:
         warn("%s: code shrank to %d pt to fit \u2014 worth splitting"
              % (_CONTEXT[0], size))
 
