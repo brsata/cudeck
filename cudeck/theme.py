@@ -578,7 +578,7 @@ def bullets_slide(prs, title, items, notes=None, size=T_BULLET, top=BODY_TOP,
 
 def _fit_bullets(prs, title, norm, size, floor, top):
     avail = BODY_BOTTOM - top
-    while size >= floor:
+    while True:
         h = 0
         for text, lvl, opts in norm:
             sz = opts.get("size", size if lvl == 0 else size - 4)
@@ -586,7 +586,9 @@ def _fit_bullets(prs, title, norm, size, floor, top):
             lines = wrapped_lines(plain(text), sz,
                                   BODYW - indent - Inches(0.42))
             h += int(Pt(sz * LS_BULLET) * lines) + int(Pt(sz) * 0.62)
-        if h <= avail:
+        # stop at the floor even if it still does not fit; bullet_list then
+        # reports the overrun, which is the honest answer
+        if h <= avail or size - 2 < floor:
             break
         size -= 2
     if size < T_BULLET:
