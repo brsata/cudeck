@@ -17,34 +17,55 @@ from PIL import Image, ImageDraw, ImageFont
 from pptx import Presentation
 from pptx.oxml.ns import qn
 
+from cudeck.theme import _FONT_DIRS
+
 DPI = 110.0
 E = 914400.0                       # EMU per inch
 PT = 12700.0                       # EMU per point
 
-# the deck's own faces, once install_fonts.sh has been run
-F = os.path.expanduser("~/Library/Fonts")
+# the deck's own faces, once install_fonts.sh has been run, looked for where
+# the theme looks for them
 FONTS = {
-    ("sans", False): F + "/Archivo-Regular.ttf",
-    ("sans", True): F + "/Archivo-Bold.ttf",
-    ("mono", False): F + "/IBMPlexMono-Regular.ttf",
-    ("mono", True): F + "/IBMPlexMono-Bold.ttf",
+    ("sans", False): "Archivo-Regular.ttf",
+    ("sans", True): "Archivo-Bold.ttf",
+    ("mono", False): "IBMPlexMono-Regular.ttf",
+    ("mono", True): "IBMPlexMono-Bold.ttf",
 }
+# otherwise whatever the system has, first match wins: macOS, Linux, Windows
 FALLBACK = {
-    ("sans", False): "/System/Library/Fonts/Helvetica.ttc",
-    ("sans", True): "/System/Library/Fonts/Helvetica.ttc",
-    ("mono", False): F + "/JetBrainsMonoNL-Regular.ttf",
-    ("mono", True): F + "/JetBrainsMonoNL-Bold.ttf",
+    ("sans", False): ["/System/Library/Fonts/Helvetica.ttc",
+                      "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                      "C:/Windows/Fonts/arial.ttf"],
+    ("sans", True): ["/System/Library/Fonts/Helvetica.ttc",
+                     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                     "C:/Windows/Fonts/arialbd.ttf"],
+    ("mono", False): ["/System/Library/Fonts/Menlo.ttc",
+                      "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
+                      "C:/Windows/Fonts/consola.ttf"],
+    ("mono", True): ["/System/Library/Fonts/Menlo.ttc",
+                     "/usr/share/fonts/truetype/dejavu/"
+                     "DejaVuSansMono-Bold.ttf",
+                     "C:/Windows/Fonts/consolab.ttf"],
 }
 TTC_INDEX = {}
 _cache = {}
 
 
+def _find(name):
+    for d in _FONT_DIRS:
+        path = os.path.join(d, name)
+        if os.path.exists(path):
+            return path
+    return None
+
+
 def font(kind, bold, pt):
     key = (kind, bold, round(pt))
     if key not in _cache:
-        path = FONTS[(kind, bold)]
-        if not os.path.exists(path):
-            path = FALLBACK[(kind, bold)]
+        path = _find(FONTS[(kind, bold)])
+        if path is None:
+            path = next((p for p in FALLBACK[(kind, bold)]
+                         if os.path.exists(p)), "")
         px = max(6, int(round(pt * DPI / 72.0)))
         idx = TTC_INDEX.get((kind, bold), 0)
         try:

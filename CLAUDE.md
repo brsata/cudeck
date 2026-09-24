@@ -10,7 +10,8 @@ there.
 ```bash
 pip install -e '.[tools]'
 sh tools/install_fonts.sh          # Archivo + IBM Plex Mono
-brew install --cask libreoffice    # for tools/render.sh
+brew install --cask libreoffice && brew install poppler   # for tools/render.sh
+# Linux: sudo apt install libreoffice-impress poppler-utils
 ```
 
 Python 3.8+. The only hard dependency is `python-pptx`; Pillow is needed by

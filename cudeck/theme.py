@@ -130,7 +130,13 @@ LABEL_H  = Inches(0.34)
 # ================================================================ measuring
 # If the real faces are installed, measure with them; otherwise fall back to a
 # per-character estimate so a build still works on a machine without fonts.
+# Where install_fonts.sh puts them, and where each system's own installer does:
+# Windows installs for the current user unless told "for all users".
 _FONT_DIRS = [os.path.expanduser("~/Library/Fonts"), "/Library/Fonts",
+              os.path.expanduser("~/.local/share/fonts"),
+              os.path.expanduser("~/.fonts"), "/usr/local/share/fonts",
+              os.path.join(os.environ.get("LOCALAPPDATA", ""),
+                           "Microsoft", "Windows", "Fonts"),
               "C:/Windows/Fonts"]
 _FACES = {("sans", False): "Archivo-Regular.ttf",
           ("sans", True): "Archivo-Bold.ttf",

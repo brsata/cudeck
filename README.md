@@ -71,9 +71,13 @@ but not quite, right.
 For rendering and checking (optional, but see *Checking your work*):
 
 ```bash
-brew install --cask libreoffice
+brew install --cask libreoffice && brew install poppler     # macOS
+sudo apt install libreoffice-impress poppler-utils          # Debian/Ubuntu
 pip install -e '.[tools]'
 ```
+
+On Linux `install_fonts.sh` puts the fonts in `~/.local/share/fonts`, where
+`render.sh` and the theme's own measuring both look for them.
 
 ---
 
