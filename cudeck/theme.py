@@ -561,17 +561,7 @@ def bullets_slide(prs, title, items, notes=None, size=T_BULLET, top=BODY_TOP,
                   floor=24):
     """Body bullets.  items: str, or (text, level), or (text, level, opts)."""
     s = content_slide(prs, title)
-    norm = []
-    for it in items:
-        opts = {}
-        if isinstance(it, tuple):
-            text, lvl = (it[0], it[1]) if len(it) >= 2 else (it[0], 0)
-            if len(it) == 3:
-                opts = it[2]
-        else:
-            text, lvl = it, 0
-        norm.append((text, lvl, opts))
-
+    norm = [_bullet(it) for it in items]
     size = _fit_bullets(prs, title, norm, size, floor, top)
     bullet_list(s, norm, MARGIN, top, BODYW, size=size)
     _notes(s, notes)
@@ -581,13 +571,7 @@ def bullets_slide(prs, title, items, notes=None, size=T_BULLET, top=BODY_TOP,
 def _fit_bullets(prs, title, norm, size, floor, top):
     avail = BODY_BOTTOM - top
     while True:
-        h = 0
-        for text, lvl, opts in norm:
-            sz = opts.get("size", size if lvl == 0 else size - 4)
-            indent = Inches(0.45) * lvl
-            lines = wrapped_lines(plain(text), sz,
-                                  BODYW - indent - Inches(0.42))
-            h += int(Pt(sz * LS_BULLET) * lines) + int(Pt(sz) * 0.62)
+        h = bullets_height(norm, BODYW, size)
         # stop at the floor even if it still does not fit; bullet_list then
         # reports the overrun, which is the honest answer
         if h <= avail or size - 2 < floor:
@@ -600,34 +584,43 @@ def _fit_bullets(prs, title, norm, size, floor, top):
     return size
 
 
+def _bullet(it):
+    """An item as (text, level, opts), from str, (text,), (text, level) or
+    (text, level, opts)."""
+    if not isinstance(it, tuple):
+        return it, 0, {}
+    return (it[0], it[1] if len(it) >= 2 else 0,
+            it[2] if len(it) == 3 else {})
+
+
 def bullets_height(items, width, size):
+    """Height bullet_list needs for `items` at `size`.
+
+    Measured as drawn: a sub-bullet is 4 pt smaller and indented, and a bold
+    or code-face item is measured in that face.
+    """
     need = 0
     for it in items:
-        text = it[0] if isinstance(it, tuple) else it
-        opts = it[2] if isinstance(it, tuple) and len(it) == 3 else {}
-        sz = opts.get("size", size)
-        need += int(Pt(sz * LS_BULLET) *
-                    wrapped_lines(plain(text), sz, width - Inches(0.42)))
-        need += int(Pt(sz) * 0.62)
+        text, lvl, opts = _bullet(it)
+        sz = opts.get("size", size if lvl == 0 else size - 4)
+        inner = width - Inches(0.45) * lvl - Inches(0.42)
+        lines = wrapped_lines(plain(text), sz, inner,
+                              mono=opts.get("mono", False),
+                              bold=opts.get("bold", False))
+        need += int(Pt(sz * LS_BULLET) * lines) + int(Pt(sz) * 0.62)
     return need
 
 
 def bullet_list(slide, items, left, top, width, size=T_BULLET, color=INK,
                 marker=GREEN, floor=None, bottom=None):
-    """Square-marker bullets. items as normalised by bullets_slide."""
+    """Square-marker bullets. items: str, or (text, level), or
+    (text, level, opts)."""
     limit = BODY_BOTTOM if bottom is None else bottom
     if floor:
         while (size > floor
                and top + bullets_height(items, width, size) > limit):
             size -= 1
-    need = 0
-    for it in items:
-        text = it[0] if isinstance(it, tuple) else it
-        opts = it[2] if isinstance(it, tuple) and len(it) == 3 else {}
-        sz = opts.get("size", size)
-        need += int(Pt(sz * LS_BULLET) *
-                    wrapped_lines(plain(text), sz, width - Inches(0.42)))
-        need += int(Pt(sz) * 0.62)
+    need = bullets_height(items, width, size)
     if top + need > BODY_BOTTOM + Inches(0.05):
         warn("%s: bullets run %.2f\" past the foot of the slide"
              % (_CONTEXT[0], (top + need - BODY_BOTTOM) / 914400.0))
@@ -636,11 +629,7 @@ def bullet_list(slide, items, left, top, width, size=T_BULLET, color=INK,
     tb = _tb(slide, left, top, width, min(need, BODY_BOTTOM - top))
     tf = tb.text_frame
     for i, it in enumerate(items):
-        if isinstance(it, tuple):
-            text, lvl = it[0], (it[1] if len(it) >= 2 else 0)
-            opts = it[2] if len(it) == 3 else {}
-        else:
-            text, lvl, opts = it, 0, {}
+        text, lvl, opts = _bullet(it)
         sz = opts.get("size", size if lvl == 0 else size - 4)
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         p.space_after = Pt(sz * 0.62)
@@ -809,8 +798,11 @@ def notes_height(items, width, size=T_NOTE, label=True):
     inner = width - 2 * PANEL_PAD - Inches(0.34)
     h = 0
     for it in items:
-        text = plain(it[0] if isinstance(it, tuple) else it)
-        h += int(Pt(size * LS_NOTE) * wrapped_lines(plain(text), size, inner))
+        # a (text, colour) item is drawn bold, so measure it bold
+        bold = isinstance(it, tuple)
+        text = plain(it[0] if bold else it)
+        h += int(Pt(size * LS_NOTE)
+                 * wrapped_lines(text, size, inner, bold=bold))
         h += int(Pt(size) * 0.58)
     h += 2 * PANEL_PAD + (LABEL_H if label else 0)
     return h
