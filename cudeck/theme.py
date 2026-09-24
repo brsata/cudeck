@@ -1221,6 +1221,12 @@ def references_slide(prs, books=None, note=None, notes_text=None,
             "books=[(title, authors, edition), ...]")
     s = content_slide(prs, title)
     y = BODY_TOP + Inches(0.25)
+    # each book takes 2" and only two fit; a third runs off the foot
+    last = y + Inches(2.0) * (len(books) - 1) + Inches(1.65)
+    if last > BODY_BOTTOM + Inches(0.02):
+        warn("%s: %d books run %.2f\" past the foot of the slide — "
+             "split them across two slides"
+             % (title, len(books), (last - BODY_BOTTOM) / 914400.0))
     for entry in books:
         btitle, authors, edition = (list(entry) + ["", ""])[:3]
         bx, by, bw, bh = panel(s, MARGIN, y, BODYW, Inches(1.65),
