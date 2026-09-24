@@ -128,23 +128,39 @@ def run_props(r):
     return size, bold, color, kind
 
 
+# Single spacing, as a renderer draws it: 1.2x the point size for both faces,
+# measured from LibreOffice. A percentage is a multiple of that, not of the
+# point size, which is why the theme sets its spacing in points.
+SINGLE = 1.2
+
+
+def _points(el, tag):
+    """A paragraph spacing given in points, or None."""
+    sp = el.find(qn(tag)) if el is not None else None
+    pts = sp.find(qn("a:spcPts")) if sp is not None else None
+    return int(pts.get("val")) / 100.0 if pts is not None else None
+
+
 def para_props(p):
+    """align, space before and after (pt), line spacing, left margin.
+
+    Line spacing is ("pts", points) or ("pct", multiple of single).
+    """
     pPr = p._p.find(qn("a:pPr"))
-    align, after, spacing, marL = "l", 0.0, 1.0, 0.0
+    align, marL, line = "l", 0.0, ("pct", 1.0)
     if pPr is not None:
         align = {"ctr": "c", "r": "r"}.get(pPr.get("algn"), "l")
         marL = float(pPr.get("marL") or 0)
-        sa = pPr.find(qn("a:spcAft"))
-        if sa is not None:
-            pts = sa.find(qn("a:spcPts"))
-            if pts is not None:
-                after = int(pts.get("val")) / 100.0
         ln = pPr.find(qn("a:lnSpc"))
         if ln is not None:
-            pct = ln.find(qn("a:spcPct"))
-            if pct is not None:
-                spacing = int(pct.get("val")) / 100000.0
-    return align, after, spacing, marL
+            pts, pct = ln.find(qn("a:spcPts")), ln.find(qn("a:spcPct"))
+            if pts is not None:
+                line = ("pts", int(pts.get("val")) / 100.0)
+            elif pct is not None:
+                line = ("pct", int(pct.get("val")) / 100000.0)
+    before = _points(pPr, "a:spcBef") or 0.0
+    after = _points(pPr, "a:spcAft") or 0.0
+    return align, before, after, line, marL
 
 
 def wrap(text, fnt, width):
@@ -167,7 +183,9 @@ def draw_text_frame(d, tf, box, wrap_on=True, vert=None):
     lines = []                      # ([(text, font, colour)], align, indent)
     heights = []
     for p in tf.paragraphs:
-        align, after, spacing, marL = para_props(p)
+        align, before, after, line, marL = para_props(p)
+        if before:
+            heights.append(("gap", before * DPI / 72.0))
         runs = [r for r in p.runs if r.text]
         if not runs:
             heights.append(("gap", after * DPI / 72.0))
@@ -185,7 +203,10 @@ def draw_text_frame(d, tf, box, wrap_on=True, vert=None):
                     toks.append((" ", f, col))
                 if part:
                     toks.append((part, f, col))
-        lh = maxpt * spacing * DPI / 72.0
+        if line[0] == "pts":
+            lh = line[1] * DPI / 72.0
+        else:
+            lh = maxpt * SINGLE * line[1] * DPI / 72.0
         if not wrap_on:
             lines.append((toks, align, indent))
             heights.append(("line", lh))
@@ -227,8 +248,14 @@ def draw_text_frame(d, tf, box, wrap_on=True, vert=None):
             x = x0 + w - tw
         else:
             x = x0 + indent
+        # the baseline sits where it would in the font's own line box, scaled
+        # to the line's actual height: tight spacing pulls it up, loose pushes
+        # it down
+        asc, desc = max((f.getmetrics() for _, f, _ in segs),
+                        key=lambda m: m[0] + m[1])
+        base = y + v * asc / float(asc + desc)
         for t, f, col in segs:
-            d.text((x, y), t, font=f, fill=col)
+            d.text((x, base), t, font=f, fill=col, anchor="ls")
             x += f.getlength(t)
         y += v
 
