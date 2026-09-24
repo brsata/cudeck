@@ -79,8 +79,12 @@ CODE_NUMBERS = [True]
 FONT      = "Archivo"
 # Headlines: the weight is the point of them.
 FONT_DISPLAY = "Archivo ExtraBold"
-MARKER_FONT = None      # \u25aa comes from the body face — Archivo has it, and
-                        # it is the same file on every machine we install to
+# The bullet marker comes from the body face, so it is the same glyph on every
+# machine that has the fonts installed. That rules out a square: neither
+# Archivo nor IBM Plex Mono has \u25aa or any other, and a square marker was
+# drawn from whatever fallback each machine had.
+MARKER = "\u2022"
+MARKER_FONT = None
 MONO      = "IBM Plex Mono"
 CODEFONT  = MONO
 
@@ -619,7 +623,7 @@ def bullets_height(items, width, size):
 
 def bullet_list(slide, items, left, top, width, size=T_BULLET, color=INK,
                 marker=GREEN, floor=None, bottom=None):
-    """Square-marker bullets. items: str, or (text, level), or
+    """Bulleted list. items: str, or (text, level), or
     (text, level, opts)."""
     limit = BODY_BOTTOM if bottom is None else bottom
     if floor:
@@ -646,7 +650,7 @@ def bullet_list(slide, items, left, top, width, size=T_BULLET, color=INK,
             pPr.set("indent", "0")
         if not text:
             continue
-        _run(p, "▪  ", sz * 0.62, opts.get("marker", marker), bold=True,
+        _run(p, MARKER + "  ", sz, opts.get("marker", marker), bold=True,
              font=MARKER_FONT)
         if opts.get("mono"):
             _run(p, plain(text), sz, opts.get("color", color),
@@ -849,7 +853,7 @@ def notes_panel(slide, items, left, top, width, height, label="What to notice",
         p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
         p.space_after = Pt(size * 0.58)
         p.line_spacing = Pt(size * LS_NOTE)
-        _run(p, "▪  ", size * 0.6, color if bold else GREEN, bold=True,
+        _run(p, MARKER + "  ", size, color if bold else GREEN, bold=True,
              font=MARKER_FONT)
         _rich(p, text, size, color, bold=bold)
     return height
