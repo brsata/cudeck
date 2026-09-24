@@ -864,6 +864,13 @@ def defs_height(pairs, width, size=T_NOTE, label=True):
 def defs_panel(slide, pairs, left, top, width, height, label="Each part, once",
                size=T_NOTE, tone="plain"):
     """Term in the code face, then what it means: [(head, body), ...]."""
+    need = defs_height(pairs, width, size=size, label=bool(label))
+    if need > height:
+        warn("%s: definitions panel is %.2f\" short"
+             % (_CONTEXT[0], (need - height) / 914400.0))
+    if top + height > BODY_BOTTOM + Inches(0.02):
+        warn("%s: definitions panel runs %.2f\" past the body area"
+             % (_CONTEXT[0], (top + height - BODY_BOTTOM) / 914400.0))
     bx, by, bw, bh = panel(slide, left, top, width, height,
                            label=label, tone=tone)
     tb = _tb(slide, bx, by, bw, bh)
@@ -883,8 +890,20 @@ def defs_panel(slide, pairs, left, top, width, height, label="Each part, once",
 def output_panel(slide, runs, left, top, width, height,
                  label="What it prints", size=T_CODE):
     """runs: [(caption, printed_text), ...] — one transcript per input."""
+    need = output_height(runs, size=size, label=bool(label))
+    if need > height:
+        warn("%s: output panel is %.2f\" short"
+             % (_CONTEXT[0], (need - height) / 914400.0))
     if top + height > BODY_BOTTOM + Inches(0.02):
-        warn("%s: output panel runs past the body area" % _CONTEXT[0])
+        warn("%s: output panel runs %.2f\" past the body area"
+             % (_CONTEXT[0], (top + height - BODY_BOTTOM) / 914400.0))
+    # printed lines are not wrapped or shrunk: a transcript has to read as
+    # the program's own output, so a line too long for the panel is reported
+    widest = max(text_w(ln, size, mono=True)
+                 for _, printed in runs for ln in printed.split("\n"))
+    if widest > width - 2 * PANEL_PAD:
+        warn("%s: output is %.2f\" too wide for its panel"
+             % (_CONTEXT[0], (widest - width + 2 * PANEL_PAD) / 914400.0))
     bx, by, bw, bh = panel(slide, left, top, width, height,
                            label=label, tone="plain")
     tb = _tb(slide, bx, by, bw, bh)
