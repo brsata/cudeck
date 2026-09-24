@@ -439,7 +439,9 @@ def finish(prs, out, verbose=True):
         n = index[id(slide)]
         num.text_frame.paragraphs[0].runs[0].text = "%02d" % n
         prog.width = max(Inches(0.04), int(Inches(0.32) * n / total))
-    os.makedirs(os.path.dirname(out), exist_ok=True)
+    # a bare filename has no folder to make, and makedirs("") raises
+    if os.path.dirname(out):
+        os.makedirs(os.path.dirname(out), exist_ok=True)
     prs.save(out)
     if verbose:
         print("saved: %s" % out)
