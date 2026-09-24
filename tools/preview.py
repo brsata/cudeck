@@ -30,6 +30,8 @@ FONTS = {
     ("sans", True): "Archivo-Bold.ttf",
     ("mono", False): "IBMPlexMono-Regular.ttf",
     ("mono", True): "IBMPlexMono-Bold.ttf",
+    ("display", False): "Archivo-ExtraBold.ttf",
+    ("display", True): "Archivo-ExtraBold.ttf",
 }
 # otherwise whatever the system has, first match wins: macOS, Linux, Windows
 FALLBACK = {
@@ -47,6 +49,8 @@ FALLBACK = {
                      "DejaVuSansMono-Bold.ttf",
                      "C:/Windows/Fonts/consolab.ttf"],
 }
+FALLBACK[("display", False)] = FALLBACK[("display", True)] = \
+    FALLBACK[("sans", True)]
 TTC_INDEX = {}
 _cache = {}
 
@@ -125,6 +129,8 @@ def run_props(r):
         if lt is not None:
             name = lt.get("typeface") or ""
     kind = "mono" if ("Mono" in name or "Consolas" in name) else "sans"
+    if "ExtraBold" in name:        # the headline face, much wider than Regular
+        kind = "display"
     return size, bold, color, kind
 
 
