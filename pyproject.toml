@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cudeck"
-version = "1.0.0"
+dynamic = ["version"]         # from cudeck/__init__.py
 description = "A lecture-slide theme in the Çukurova University identity"
 readme = "README.md"
 requires-python = ">=3.8"
@@ -25,6 +25,9 @@ tools = ["Pillow>=9"]
 
 [tool.setuptools]
 packages = ["cudeck"]
+
+[tool.setuptools.dynamic]
+version = { attr = "cudeck.__version__" }
 
 [tool.setuptools.package-data]
 cudeck = ["media/*.png"]
